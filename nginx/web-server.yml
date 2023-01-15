@@ -1,1 +1,57 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
 
+  tasks:
+    - name: install nginx
+      apt:
+        name: nginx
+        state: latest
+
+    - name: create dir
+      file: 
+        path: "/root/Desktop/app"
+        state: directory
+
+    - name: create file
+      file:
+        path: "/root/Desktop/app/index.html"
+        state: touch
+
+    - name: fill file
+      copy:
+        dest: "/root/Desktop/app/index.html"
+        content: | 
+          <!DOCTYPE html>
+          <html>
+            <body>
+              <h1>Hello world</h1>
+            </body>
+          </html> 
+
+    - name: create dockerfile
+      file:
+        path: "/root/Desktop/app/Dockerfile"
+        state: touch
+
+    - name: fill Dockerfile
+      copy:
+        dest: "/root/Desktop/app/Dockerfile"
+        content: |
+          FROM nginx:alpine
+          COPY . /usr/share/nginx/html/test
+
+    - name: create image
+      docker_image:
+        name: html:latest
+        build:
+          path: "/root/Desktop/app"
+
+    - name: deploy nginx container
+      docker_container:
+        image: html:latest
+        name: web-server
+        state: started
+        ports:
+          - "8080:80"
