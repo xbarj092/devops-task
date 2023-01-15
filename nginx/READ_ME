@@ -1,0 +1,4 @@
+Web server běží - na localhost:8080/test/ se spustí index.html, který je uložený na disku ve vytvořené složce /root/Desktop/app/
+
+
+Nepodařilo se mi zprovoznit caching reverse proxy
