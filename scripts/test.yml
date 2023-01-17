@@ -1,0 +1,50 @@
+---
+- hosts: localhost
+  become: true
+
+  tasks: 
+    - name: create dir
+      file:
+        path: "/root/Desktop/docker"
+        state: directory
+
+    - name: create Dockerfile
+      file:
+        path: "/root/Desktop/docker/Dockerfile"
+        state: touch
+
+    - name: create main cpp
+      file:
+        path: "/root/Desktop/docker/main.cpp"
+        state: touch
+
+    - name: fill Dockerfile
+      copy:
+        dest: "/root/Desktop/docker/Dockerfile"
+        content: |
+          FROM gcc:latest
+          COPY . /usr/src/cpp_test
+          WORKDIR /usr/src/cpp_test
+          RUN g++ -o Test main.cpp
+          CMD ["./Test"]
+
+    - name: fill main cpp
+      copy:
+        dest: "/root/Desktop/docker/main.cpp"
+        content: |
+          #include <iostream>
+          int main() {
+            std::cout << "Hello Docker" << std::endl;
+          }
+
+    - name: create image
+      docker_image:
+        name: script:latest
+        build:
+          path: "/root/Desktop/docker/"
+
+    - name: deploy container
+      docker_container:
+        image: script:latest
+        name: test
+        state: started
