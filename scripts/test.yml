@@ -18,11 +18,26 @@
         path: "/root/Desktop/docker/main.cpp"
         state: touch
 
+    - name: create daemon script
+      file:
+        path: "/root/Desktop/docker/run"
+        state: touch
+
+    - name: fill daemon script
+      copy:
+        dest: "/root/Desktop/docker/run"
+        content: |
+          #!/bin/bash
+          exec /usr/src/cpp_test main.cpp
+
     - name: fill Dockerfile
       copy:
         dest: "/root/Desktop/docker/Dockerfile"
         content: |
           FROM gcc:latest
+          RUN apt-get update && apt-get install daemontools daemontools-run
+          RUN mkdir /etc/service/myservice
+          COPY . /etc/service/myservice
           COPY . /usr/src/cpp_test
           WORKDIR /usr/src/cpp_test
           RUN g++ -o Test main.cpp
