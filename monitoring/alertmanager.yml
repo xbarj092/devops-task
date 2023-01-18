@@ -1,0 +1,90 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: install alertmaganager
+      get_url:
+        url: "https://github.com/prometheus/alertmanager/releases/download/v0.20.0/alertmanager-0.20.0.linux-amd64.tar.gz"
+        dest: "/etc/alertmanager-0.20.0.linux-amd64.tar.gz"
+
+    - name: extract package
+      unarchive:
+        src: "/etc/alertmanager-0.20.0.linux-amd64.tar.gz"
+        dest: "/usr/local/bin"
+
+    - name: create service file
+      file:
+        path: "/etc/systemd/system/alertmanager.service"
+        state: touch
+
+    - name: fill service file
+      copy:
+        dest: "/etc/systemd/system/alertmanager.service"
+        content: |
+          [Unit]
+          Description=Prometheus Alert Manager Service
+          After=network.target
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager \
+                  --config.file=/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager.yml
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: change alertmanager yml
+      copy:
+        dest: "/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager.yml"
+        content: |
+          route:
+          receiver: 'jack.bartusek@gmail.com'
+          repeat_interval: 4h
+          group_by: [ alertname ]
+          receivers:
+            - name: 'jack.bartusek@gmail.com'
+              email_configs:
+                - smarthost: 'smtp.gmail.com:587'
+                  auth_username: 'jack.bartusek@gmail.com'
+                  auth_password: ""
+                  from: 'jack.bartusek@gmail.com'
+                  to: 'jack.bartusek@gmail.com'
+
+    - name: edit prometheus yml
+      copy:
+        dest: "/var/lib/docker/volumes/prometheus_conf/_data/prometheus.yml"
+        content: |
+          global:
+            scrape_interval: 15s
+            evaluation_interval: 15s
+          alerting:
+            alertmanagers:
+              - static_configs:
+                  - targets:
+                     - alertmanager:9093
+          rule_files:
+            - "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+          scrape_configs:
+            - job_name: "prometheus"
+              static_configs:
+                - targets: ["0.0.0.0:9090"]
+            - job_name: "docker"
+              static_configs:
+                - targets: ["192.168.0.107:9323"]
+
+    - name: create myrules yml
+      file:
+        path: "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+        state: touch
+
+    - name: fill myrules
+      copy:
+        dest: "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+        content: |
+          groups:
+            - name: my-rules
+              rules:
+              - record: job:node_memory_MemFree_bytes_percent
+                expr: 100 - (100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
+              - alert: dockerdown
+                expr: up{job="docker"} == 0
