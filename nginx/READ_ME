@@ -1,1 +1,1 @@
-Bohužel se mi nepodařilo zprovoznit caching reverse proxy
+Nedokázal jsem přepsat do ansible vše, odevzdávám tedy bash scripts k reverse-proxy
