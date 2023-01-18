@@ -1,4 +1,4 @@
 Nedokázal jsem přepsat do ansible vše, odevzdávám tedy bash scripts k reverse-proxy
 
 
-Když startnu reverse proxy a jdu na localhost/test, nginx píše nespecifikovanou chybu - nepodařilo se mi vyřešit -> úkol nesplněn
+Když startnu reverse proxy a jdu na localhost/test, nginx píše nespecifikovanou chybu - nepodařilo se mi vyřešit
