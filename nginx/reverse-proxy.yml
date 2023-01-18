@@ -1,0 +1,12 @@
+---
+- hosts: localhost
+  connection: local
+  become: yes
+
+  tasks:
+    - name: create container
+      docker_container:
+        name: reverse-proxy
+        image: nginx:latest
+        ports:
+          - "80:80"
