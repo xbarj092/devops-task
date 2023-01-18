@@ -1,0 +1,4 @@
+Prometheus je dostupný na localost:9090
+Metriky jsou dostupné na localhost:9323/metrics a localhost:9090/metrics
+Grafana je dostupná na localhost:3000
+Add data source Prometheus a můžou se zobrazovat metriky
