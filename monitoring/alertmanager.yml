@@ -14,43 +14,53 @@
         src: "/etc/alertmanager-0.20.0.linux-amd64.tar.gz"
         dest: "/usr/local/bin"
 
-    - name: create service file
+    - name: create folder
       file:
-        path: "/etc/systemd/system/alertmanager.service"
-        state: touch
+        path: "/data/alertmanager"
+        state: directory
 
-    - name: fill service file
-      copy:
-        dest: "/etc/systemd/system/alertmanager.service"
-        content: |
-          [Unit]
-          Description=Prometheus Alert Manager Service
-          After=network.target
-          [Service]
-          Type=simple
-          ExecStart=/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager \
-                  --config.file=/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager.yml
-          [Install]
-          WantedBy=multi-user.target
-
-    - name: change alertmanager yml
+    - name: edit alertmanager yml
       copy:
         dest: "/usr/local/bin/alertmanager-0.20.0.linux-amd64/alertmanager.yml"
         content: |
           route:
-          receiver: 'jack.bartusek@gmail.com'
-          repeat_interval: 4h
-          group_by: [ alertname ]
-          receivers:
-            - name: 'jack.bartusek@gmail.com'
-              email_configs:
-                - smarthost: 'smtp.gmail.com:587'
-                  auth_username: 'jack.bartusek@gmail.com'
-                  auth_password: ""
-                  from: 'jack.bartusek@gmail.com'
-                  to: 'jack.bartusek@gmail.com'
+            group_by: [Alertname]
+            reciever: email-me
+          recievers:
+          - name: email-me
+            email_configs:
+            - to: jack.bartusek@gmail.com
+              from: jack.bartusek@gmail.com
+              smarthost: smtp.gmail.com:587
+              auth_username: "jack.bartusek@gmail.com"
+              auth_identity: "jack.bartusek@gmail.com"
+              auth_password: ""
 
-    - name: edit prometheus yml
+    - name: create service file
+      file:
+        path: "/lib/systemd/system/alertmanager.service"
+        state: touch
+
+    - name: fill service file
+      copy:
+        dest: "/lib/systemd/system/alertmanager.service"
+        content: |
+          [Unit]
+          Description=Alert Manager
+          Wants=network-online.target
+          After=network-online.target
+          [Service]
+          Type=simple
+          User=root
+          Group=root
+          ExecStart=/usr/local/bin/alertmanager \
+            --config.file=/usr/local/bin/alertmanager.yml \
+            --storage.path=/data/alertmanager
+          Restart=always
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: bind alertmanager with prom
       copy:
         dest: "/var/lib/docker/volumes/prometheus_conf/_data/prometheus.yml"
         content: |
@@ -60,10 +70,10 @@
           alerting:
             alertmanagers:
               - static_configs:
-                  - targets:
-                     - alertmanager:9093
+                - targets:
+                  - localhost:9093
           rule_files:
-            - "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+            - "myrules.yml"
           scrape_configs:
             - job_name: "prometheus"
               static_configs:
@@ -72,19 +82,18 @@
               static_configs:
                 - targets: ["192.168.0.107:9323"]
 
-    - name: create myrules yml
+    - name: create myrule file
       file:
-        path: "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+        path: "/var/lib/docker/volumes/prometheus_conf/_data/myrules.yml"
         state: touch
 
-    - name: fill myrules
+    - name: fill myrule file
       copy:
-        dest: "/var/lib/docker/volumes/prometheus_conf/_data/rules/myrules.yml"
+        dest: "/var/lib/docker/volumes/prometheus_conf/_data/myrules.yml"
         content: |
           groups:
-            - name: my-rules
+            - name: test
               rules:
-              - record: job:node_memory_MemFree_bytes_percent
-                expr: 100 - (100 * node_memory_MemFree_bytes / node_memory_MemTotal_bytes)
-              - alert: dockerdown
-                expr: up{job="docker"} == 0
+              - alert: instance down
+                expr: up == 0
+                for: 1m
