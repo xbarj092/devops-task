@@ -1,4 +1,0 @@
-docker exec cluster_kafka-1_1 \
-kafka-topics --bootstrap-server localhost:19092 localhost:29092 localhost:39092 \
-             --create \
-             --topic quickstart
