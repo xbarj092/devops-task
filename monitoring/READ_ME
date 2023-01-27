@@ -1,1 +1,0 @@
-Po zapsání kódu do json file nutno restartovat docker - systemctl restart docker
